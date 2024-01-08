@@ -4,71 +4,201 @@
 {% block title %}Wunjo AI{% endblock %}
 
 {% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='video/css/timeline.css') }}">
 
+<script type="text/javascript" src="{{ url_for('static', filename='basic/js/menu.js') }}" defer></script>
+<script type="text/javascript" src="{{ url_for('static', filename='basic/js/dagre.min.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='node/js/video.js') }}" defer></script>
+<script type="text/javascript" src="{{ url_for('static', filename='node/js/image.js') }}" defer></script>
+<script type="text/javascript" src="{{ url_for('static', filename='node/js/audio.js') }}" defer></script>
+<script type="text/javascript" src="{{ url_for('static', filename='extensions/js/console/console.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='video/js/control.js') }}"></script>
+<!--font-family: monospace;TODO-->
 {% endblock %}
 
 {% block menubar %}
+<div id="menubar" class="social-icons" style="top: 0;left: 0;position: absolute;z-index: 1;margin-top: 20px;margin-left: 20px;font-size: x-large;">
+    <div>
+        <a class="menu-button" id="file-select-btn" title="File"><i class="fa-solid fa-bars"></i></a>
+        <a class="menu-button" title="Undo" onclick="undoWorkflow();"><i class="fa-solid fa-angle-left"></i></a>
+        <a class="menu-button" title="Rendo" onclick="rendoWorkflow();"><i class="fa-solid fa-angle-right"></i></a>
+        <a class="menu-button" title="Sort nodes" onclick="toposortNodes();"><i class="fa-solid fa-expand"></i></a>
+    </div>
+    <div>
+        <div id="file-select" style="display: none;flex-direction: column;box-shadow: rgba(0, 0, 0, 0.19) 0px 10px 20px, rgba(0, 0, 0, 0.23) 0px 6px 6px;background: #282828;margin-top: 10px;/* width: 50px; */">
+            <button class="option-btn" onclick="saveWorkflow(this.parentElement);">Save</button>
+            <input type="file" id="file-input" onchange="loadWorkflow(this.parentElement, event)" style="display: none;">
+            <button class="option-btn" onclick="document.getElementById('file-input').click();" style="border-top: 2px solid #181818;border-bottom: 2px solid #181818;">Load</button>
+            <button class="option-btn" onclick="clearWorkflow(this.parentElement);">Clear</button>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block sections %}
-<canvas id="graph-canvas"></canvas>
-<canvas id="minimap" width="200" height="150" style="border: 1px solid #000;"></canvas>
+<div id="canvas-container" style="position: relative;">
+    <canvas id="graph-canvas" style="border: 1px solid #1d1d1d"></canvas>
+    <canvas id="minimap" style="border: 1px solid #3e3e3c;position: absolute;bottom: 10px;right: 10px;background: #1d1d1dd4;box-shadow: rgba(0, 0, 0, 0.19) 0px 10px 20px, rgba(0, 0, 0, 0.23) 0px 6px 6px;"></canvas>
+</div>
 
-<pre>
-    <code id="config">
-    {
-      version:2.1,
-      workflows:{},
-      jobs:{}
-    }
-    </code>
-</pre>
+<div style="flex-direction: row;display: flex;">
+    <div class="panel-buttons" style="display: flex;flex-direction: column;width: 30px;margin-left: 5px;margin-right: 5px;margin-top: 45px;">
+        <a id="a-open-folder" href="/open_folder" class="panel-button" title="Open media folder"><i class="fa fa-folder"></i></a>
+        <a id="a-change-internet" class="panel-button" onclick="changeInternetMode(this)" style="margin-top: 5px;margin-bottom: 5px;" title="Offline and online toggle"><i class="fa-solid fa-globe"></i></a>
+        <a id="a-change-processor" class="panel-button" style="color: #18a518" title="Processor toggle"><i class="fa-solid fa-microchip"></i></a>
+    </div>
+    <div style="font-size: small;margin-top: 8px;margin-right: 5px;">
+        <div class="tabs">
+          <label class="tab active" data-target="console-log">Console</label>
+          <label class="tab" data-target="monitor-tab" style="margin:0px 2px;">Chat</label>
+          <label class="tab" data-target="monitor-tab">Monitor</label>
+          <label class="tab" data-target="about-tab" style="margin:0px 2px;">About</label>
+          <label class="tab" id="version" data-target="update-tab" vers="1.6.2" style="display: none;">What is new?</label>
+        </div>
+        <div class="panels" style="background: #1D1D1D;min-height:200px;width: 70vw;border-radius: 0;overflow:hidden;padding:20px;color: #19BD19;font-weight: bold;box-shadow: rgba(0, 0, 0, 0.19) 0px 10px 20px, rgba(0, 0, 0, 0.23) 0px 6px 6px;border-top-right-radius: 10px;">
+          <div class="tab-content" id="console-log" style="max-height: 18vh;overflow-x: hidden;overflow-y: auto;text-wrap:wrap;"></div>
+          <div class="tab-content" id="monitor-tab" style="display: none;">Monitor content</div>
+          <div class="tab-content" id="about-tab" style="display: none;">About content</div>
+          <div class="tab-content" id="update-tab" style="display: none;overflow-x: hidden;overflow-y: auto;max-height: 18vh;">Update content</div>
+        </div>
+    </div>
+    <div style="margin-left: 5px;margin-right: 5px;margin-top: 30px;color: #19BD19;border-top-left-radius: 10px;border-top-right-radius: 10px;display: flex;overflow-y: auto;overflow-x: hidden;max-width: 25vw;max-height: 20vh;flex-wrap: wrap;justify-content: space-around;">
+        <div class="media-files"><i class="fa-solid fa-file-video" ></i><p style="margin: 5px;">Face Swap</p><p style="margin: 0;">12.01.24 12:10:45</p></div>
+        <div class="media-files"><i class="fa-solid fa-file-audio" ></i><p style="margin: 5px;">Clone Voice</p><p style="margin: 0;">12.01.24 12:15:45</p></div>
+        <div class="media-files"><i class="fa-solid fa-file-image" ></i><p style="margin: 5px;">Remove Object</p><p style="margin: 0;">12.01.24 12:16:55</p></div>
+        <div class="media-files"><i class="fa-solid fa-folder-open" ></i><p style="margin: 5px;">Remove Object</p><p style="margin: 0;">12.01.24 12:18:43</p></div>
+        <div class="media-files"><i class="fa-solid fa-file-audio"></i><p style="margin: 5px;">Clone Voice</p><p style="margin: 0;">12.01.24 12:15:45</p></div>
+        <div class="media-files"><i class="fa-solid fa-file-image" ></i><p style="margin: 5px;">Remove Object</p><p style="margin: 0;">12.01.24 12:16:55</p></div>
+        <div class="media-files"><i class="fa-solid fa-folder-open" ></i><p style="margin: 5px;">Remove Object</p><p style="margin: 0;">12.01.24 12:18:43</p></div>
+    </div>
+</div>
+<div style="background: #282828;height: 13px;width: 100vw;z-index: 1;position: absolute;bottom: 0;box-shadow: rgba(0, 0, 0, 0.19) 0px 10px 20px, rgba(0, 0, 0, 0.23) 0px 6px 6px;color: #777777;display: flex;flex-direction: row;font-size: x-small;margin: 0;padding-left: 5px;padding-top: 2px;border-top: 1px solid #515151;">
+    <span style="font-weight: bold;margin-left:5pt;">Disk space used:</span>
+    <span style="margin-left:5pt;" id="content-drive-space" class="notranslate"></span>
+</div>
+
 <!--https://codepen.io/gmem/pen/qBOrKeB-->
 <script>
     // Clear all registered node types
     LiteGraph.clearRegisteredTypes();
     // Actual graph
-    var graph= new LGraph();
+    var graph = new LGraph();
     var canvas = new LGraphCanvas("#graph-canvas", graph);
+
     graph.start()
     ctx = document.getElementById("graph-canvas").getContext("2d");
-    ctx.canvas.width  = (window.innerWidth * 0.6);  // To control size for menu panel and log
-    ctx.canvas.height = (window.innerHeight * 0.8);  // To control size for version panel
+    ctx.canvas.width  = (window.innerWidth * 1);  // To control size for menu panel and log
+    ctx.canvas.height = (window.innerHeight * 0.75);  // To control size for version panel
+    // Set style for div of canvas graph
+    const canvasContainer = document.getElementById("canvas-container");
+    canvasContainer.style.width = ctx.canvas.width + "px";
+    canvasContainer.style.height = ctx.canvas.height + "px";
+
+    var graphHistory = [];
+    var graphStep = 0;
+    graphHistory[graphStep] = graph.serialize();
+
+    function saveGraphState() {
+      var currentSerializedStateLength = graph.serialize().nodes.length;
+      if (currentSerializedStateLength !== graphHistory[graphStep].nodes.length) {
+        graphStep++;
+        graphHistory[graphStep] = graph.serialize();
+        var graphHistoryUpdate = [];
+        for (let i = 0; i <= graphStep; i++) {
+          graphHistoryUpdate[i] = graphHistory[i];
+        }
+        graphHistory = graphHistoryUpdate;
+      } else {
+        graphHistory[graphStep] = graph.serialize();
+      };
+    };
 </script>
 <script>
     var minimapCanvas = document.getElementById("minimap");
     var minimapCtx = minimapCanvas.getContext("2d");
-    var minimapScale = 0.1; // Adjust this value to control the minimap size
+    var minimapRatio = ctx.canvas.width / ctx.canvas.height;
+    var minimapCoeff = 3;
+    if (minimapRatio > 1) {
+        var minimapWidth = 150;
+        var minimapHeight = minimapWidth / minimapRatio;
+    } else {
+        var minimapHeight = 150;
+        var minimapWidth = minimapHeight * minimapRatio;
+    };
+    minimapCtx.canvas.width = minimapWidth;
+    minimapCtx.canvas.height = minimapHeight;
+    var minimapScale = minimapWidth / ctx.canvas.width - 0.001; // Adjust this value to control the minimap size
 
     function updateMinimap() {
       minimapCtx.clearRect(0, 0, minimapCanvas.width, minimapCanvas.height);
 
       // Draw nodes as rectangles with aspect ratio on the minimap canvas
       var nodes = graph._nodes;
-      minimapCtx.fillStyle = "#808080"; // Gray color for nodes
+      minimapCtx.fillStyle = "#6a6a6a"; // Gray color for nodes
       for (var i = 0; i < nodes.length; i++) {
         var node = nodes[i];
-        var nodeX = node.pos[0] * minimapScale;
-        var nodeY = node.pos[1] * minimapScale;
+        var nodeX = node.pos[0] * minimapScale / minimapCoeff;
+        var nodeY = node.pos[1] * minimapScale / minimapCoeff;
         var originalNodeWidth = node.size[0]; // Width of the node in the main canvas
         var originalNodeHeight = node.size[1]; // Height of the node in the main canvas
-        var nodeWidth = originalNodeWidth * minimapScale; // Scaled width on the minimap
-        var nodeHeight = originalNodeHeight * minimapScale; // Scaled height on the minimap
+        var nodeWidth = originalNodeWidth * minimapScale / minimapCoeff; // Scaled width on the minimap
+        var nodeHeight = originalNodeHeight * minimapScale / minimapCoeff; // Scaled height on the minimap
         minimapCtx.fillRect(nodeX, nodeY, nodeWidth, nodeHeight);
       }
 
+      // Draw connections between nodes on the minimap canvas
+      var links = graph.links;
+      var linkKeys = Object.keys(links); // Get an array of link IDs
+      minimapCtx.strokeStyle = "rgb(246,81,148)";
+      minimapCtx.lineWidth = 1;
+      for (var j = 0; j < linkKeys.length; j++) {
+        var linkId = linkKeys[j];
+        var link = links[linkId];
+        var originNode = graph.getNodeById(link.origin_id);
+        var targetNode = graph.getNodeById(link.target_id);
+
+        if (originNode && targetNode) {
+          var originNodeX = originNode.pos[0] * minimapScale / minimapCoeff + (originNode.size[0] * minimapScale / minimapCoeff); // Right side of origin node
+          var originNodeY = originNode.pos[1] * minimapScale / minimapCoeff + (originNode.size[1] * minimapScale / minimapCoeff) / 2; // Center of origin node
+          var targetNodeX = targetNode.pos[0] * minimapScale / minimapCoeff; // Left side of target node
+          var targetNodeY = targetNode.pos[1] * minimapScale / minimapCoeff + (targetNode.size[1] * minimapScale / minimapCoeff) / 2; // Center of target node
+
+          // Draw line between connected nodes on the minimap canvas
+          minimapCtx.beginPath();
+          minimapCtx.moveTo(originNodeX, originNodeY);
+          minimapCtx.lineTo(targetNodeX, targetNodeY);
+          minimapCtx.stroke();
+        }
+      }
+
       // Draw a border for the visible area in the main canvas
-      minimapCtx.strokeStyle = "#FF0000";
+      minimapCtx.strokeStyle = "#939393";
       minimapCtx.lineWidth = 2;
-      minimapCtx.strokeRect(canvas.visible_area[0] * minimapScale, canvas.visible_area[1] * minimapScale, canvas.visible_area[2] * minimapScale, canvas.visible_area[3] * minimapScale);
+      minimapCtx.strokeRect(
+        canvas.visible_area[0] * minimapScale / minimapCoeff,
+        canvas.visible_area[1] * minimapScale / minimapCoeff,
+        canvas.visible_area[2] * minimapScale / minimapCoeff,
+        canvas.visible_area[3] * minimapScale / minimapCoeff
+      );
+      minimapCtx.fillStyle = "#2c2c2c99"; // Set the fill style
+      minimapCtx.fillRect(
+        canvas.visible_area[0] * minimapScale / minimapCoeff,
+        canvas.visible_area[1] * minimapScale / minimapCoeff,
+        canvas.visible_area[2] * minimapScale / minimapCoeff,
+        canvas.visible_area[3] * minimapScale / minimapCoeff
+      );
     }
 
     canvas.onRender = function() {
       updateMinimap();
+      saveGraphState();
     };
 
     canvas.onGraphChange = function() {
       updateMinimap();
     };
+</script>
+<script>
+    const serverVersionData = {{ version|tojson|safe }};
 </script>
 {% endblock %}

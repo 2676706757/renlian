@@ -15,9 +15,26 @@ function updateConsoleLog() {
       // Remove empty lines and enter (without remove \n)
       const nonEmptyData = reversedData.map(line => line.replace("\r", "").trimEnd()).filter(line => line.trim() !== "");
       // Join the reversed array elements into a single string separated by newlines
-      const logText = nonEmptyData.join("\n");
+      const logText = nonEmptyData.join("<br>");
       // Update the element with id="console-log" with the logs
-      document.getElementById("console-log").innerText = logText;
+      // document.getElementById("console-log").innerHTML = logText;
+      fetch("/synthesize_process/")
+          .then((response) => response.json())
+          .then((data) => {
+            // Check the value of status_code
+            if (data.status_code === 200) {
+              // Not need to indicate load
+              document.getElementById("console-log").innerHTML = logText;
+            } else {
+              // Use animation to indicate load
+              document.getElementById("console-log").innerHTML = `Loading<span class="blinking-cursor">|</span><br>` + logText;
+            }
+          })
+          .catch((error) => {
+            // If an error occurs, log it to the console and wait for the next interval to check again
+            console.error(error);
+            setTimeout(checkStatus, 5000);
+        });
     })
     .catch((error) => {
       console.error("Log field deleted, message from setInterval:", error);

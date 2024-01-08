@@ -12,7 +12,7 @@ async function setupVideoTimeline(parentElement, videoUrl, videoDisplayHeight='4
     videoElement.setAttribute("loop", "");
     videoElement.setAttribute("muted", "");
     videoElement.style.opacity = "1.0";
-    videoElement.style = "position: relative; width: auto;";
+    videoElement.style = "position: relative; width: auto;border-radius: 15px;";
     videoElement.style.maxWidth = videoDisplayWidth;
     videoElement.style.maxHeight = videoDisplayHeight;
     videoElement.style.zIndex = "1";
@@ -23,6 +23,7 @@ async function setupVideoTimeline(parentElement, videoUrl, videoDisplayHeight='4
     canvasElement.style.left = "0";
     canvasElement.style.top = "0";
     canvasElement.style.zIndex = "2";
+    canvasElement.style.background = "#0a0a0aad";
 
     const spanResolutionElement = document.createElement('span');
     spanResolutionElement.className = "spanResolution";
@@ -35,8 +36,19 @@ async function setupVideoTimeline(parentElement, videoUrl, videoDisplayHeight='4
     spanResolutionElement.style.fontSize = "small";
     spanResolutionElement.style.zIndex = "10";
     spanResolutionElement.style.display = "none";
-    videoContainer.appendChild(spanResolutionElement);
 
+    // Load element
+    const loadElement = document.createElement('div');
+    loadElement.className = "lds-ring";
+    const loadMoveElement = document.createElement('div');
+    // Create and append four loadMoveElement divs to loadElement
+    for (let i = 0; i < 4; i++) {
+        const loadMoveElement = document.createElement('div');
+        loadElement.appendChild(loadMoveElement);
+    }
+
+    videoContainer.appendChild(loadElement);
+    videoContainer.appendChild(spanResolutionElement);
     videoContainer.appendChild(canvasElement);
 
     const controlDiv = document.createElement('div');
@@ -47,11 +59,11 @@ async function setupVideoTimeline(parentElement, videoUrl, videoDisplayHeight='4
     const controlFirstSubDiv = document.createElement('div');
     controlFirstSubDiv.style.alignItems = "center";
     controlFirstSubDiv.style.display = "flex";
+    controlFirstSubDiv.style.color = "#19BD19";
 
     const currentTimeSpan = document.createElement('span');
     currentTimeSpan.style.fontSize = "10px";
-    currentTimeSpan.style.color = "black";
-    currentTimeSpan.innerText = "00:00:00";
+    currentTimeSpan.innerText = "00:00:00.000";
 
     const splashTimeSpan = document.createElement('span');
     splashTimeSpan.innerText = "/";
@@ -59,14 +71,17 @@ async function setupVideoTimeline(parentElement, videoUrl, videoDisplayHeight='4
 
     const endTimeSpan = document.createElement('span');
     endTimeSpan.style.fontSize = "10px";
-    endTimeSpan.style.color = "black";
-    endTimeSpan.innerText = "00:00:00";
+    endTimeSpan.innerText = "00:00:00.000";
 
     controlFirstSubDiv.appendChild(currentTimeSpan);
     controlFirstSubDiv.appendChild(splashTimeSpan);
     controlFirstSubDiv.appendChild(endTimeSpan);
 
     const controlSecondSubDiv = document.createElement('div');
+
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'timeline-buttons';
+    nextBtn.innerHTML = '<i class="fa-solid fa-forward-step"></i>';
 
     const playToggleBtn = document.createElement('button');
     playToggleBtn.className = 'timeline-buttons';
@@ -76,6 +91,10 @@ async function setupVideoTimeline(parentElement, videoUrl, videoDisplayHeight='4
     muteToggle.className = 'timeline-buttons';
     muteToggle.innerHTML = '<i class="fa-solid fa-volume-xmark"></i>';
 
+    const prevBtn = document.createElement('button');
+    prevBtn.className = 'timeline-buttons';
+    prevBtn.innerHTML = '<i class="fa-solid fa-backward-step"></i>';
+
     const filmstripDiv = document.createElement('div');
     filmstripDiv.className = "timeline";
     filmstripDiv.id = "filmstrip";
@@ -84,10 +103,13 @@ async function setupVideoTimeline(parentElement, videoUrl, videoDisplayHeight='4
 
     // Append the elements
     videoContainer.appendChild(videoElement);
+    controlSecondSubDiv.appendChild(prevBtn);
     controlSecondSubDiv.appendChild(playToggleBtn);
     controlSecondSubDiv.appendChild(muteToggle);
+    controlSecondSubDiv.appendChild(nextBtn);
 
     const controlThirdSubDiv = document.createElement('div');
+    controlThirdSubDiv.className = "timeline-tools";
 
     const drawCanvasClear = document.createElement('button');
     drawCanvasClear.className = 'timeline-buttons';
@@ -239,6 +261,8 @@ async function setupVideoTimeline(parentElement, videoUrl, videoDisplayHeight='4
     videoElement.addEventListener("loadedmetadata", function(e) {
         this.setAttribute("start", 0);
         this.setAttribute("end", this.duration);
+        this.setAttribute("w", this.videoWidth);
+        this.setAttribute("h", this.videoHeight);
 
         video_size = {'w': this.videoWidth, 'h': this.videoHeight, 'offsetWidth': this.offsetWidth, "offsetHeight": this.offsetHeight};
 
@@ -267,6 +291,17 @@ async function setupVideoTimeline(parentElement, videoUrl, videoDisplayHeight='4
         console.log('Paused: ', e.target.currentTime);
     });
 
+    // Function to handle nextBtn click
+    nextBtn.addEventListener("click", function() {
+        if (!videoElement.paused || videoElement.ended) {
+            return; // Do nothing if video is paused or ended
+        }
+        // Go to the next frame if not at the end
+        if (videoElement.currentTime < videoElement.duration) {
+            videoElement.currentTime += 1 / 100; // Increment by 1/10th of a second (assuming 1fps)
+        }
+    });
+
     playToggleBtn.addEventListener("click", function() {
         if (videoElement.paused) {
             videoElement.play();
@@ -274,6 +309,17 @@ async function setupVideoTimeline(parentElement, videoUrl, videoDisplayHeight='4
         } else {
             videoElement.pause();
             playToggleBtn.innerHTML = '<i class="fa fa-play"></i>';
+        }
+    });
+
+    // Function to handle prevBtn click
+    prevBtn.addEventListener("click", function() {
+        if (!videoElement.paused || videoElement.ended) {
+            return; // Do nothing if video is paused or ended
+        }
+        // Go to the previous frame if not at the beginning
+        if (videoElement.currentTime > 0) {
+            videoElement.currentTime -= 1 / 100; // Decrement by 1/10th of a second (assuming 1fps)
         }
     });
 
@@ -378,12 +424,12 @@ async function setupVideoTimeline(parentElement, videoUrl, videoDisplayHeight='4
         timelineDiv.appendChild(img);
         let thumbnailWidthLocal = img.clientWidth;
 
-        console.log("Thumbnail index:", index); // Debugging line
+        // console.log("Thumbnail index:", index); // Debugging line
 
         // TIMELINES TIME //
         // Add time marker every 1 frame
         if (index % 2 === 0) {
-            console.log("Adding time marker at index:", index); // Debugging line
+            // console.log("Adding time marker at index:", index); // Debugging line
             const timeMarker = document.createElement('div');
             timeMarker.classList.add('time-marker');
             timeMarker.innerText = formatTime(index * (videoElement.duration / (numberOfFrames - 1)));

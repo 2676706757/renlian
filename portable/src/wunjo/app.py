@@ -1246,7 +1246,7 @@ def change_processor():
     return {"current_processor": current_processor}
 
 
-if not app.config['DEBUG']:
+if app.config['DEBUG']:
     from time import time
     from io import StringIO
 

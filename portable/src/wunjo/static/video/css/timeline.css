@@ -60,7 +60,7 @@
     bottom: 0;
     top: 0;
     width: 2px;
-    background: #ff4f8b;
+    background: #19BD19;
     z-index: 5;
 }
 
@@ -74,14 +74,14 @@
 }
 
 .timeline .timeline-div-slider {
-    background: #42abff3d;
+    background: #1e5e913d;
     position: absolute;
     top: 0;
     bottom: 0;
 }
 
 .timeline-div-slider .timeline-div-slider-toggle-left {
-    background: #42abff;
+    background: #226295;
     width: 5px;
     left: 0;
     top: 0;
@@ -91,7 +91,7 @@
 }
 
 .timeline-div-slider .timeline-div-slider-toggle-right {
-    background: #42abff;
+    background: #226295;
     width: 5px;
     right: 0;
     top: 0;
@@ -113,14 +113,16 @@
     height: 22pt;
     display: inline;
     border: none;
-    border-radius: 50%;
+    border-radius: 10px;
     transition: box-shadow 0.3s ease;
     margin: 2px;
+    background: #3d3d3d;
+    color: #19bd19;
 }
 
 .timeline-control-panel .timeline-buttons:hover {
-    border-color: rgb(230, 231, 238);
-    box-shadow: rgb(184, 185, 190) 2px 2px 5px inset, rgb(255, 255, 255) -3px -3px 7px inset;
+    border-color: rgb(39, 39, 41);
+    box-shadow: rgb(52, 52, 54) 2px 2px 5px inset, rgb(41, 41, 41) -3px -3px 7px inset;
 }
 
 .timeline::-webkit-scrollbar {
