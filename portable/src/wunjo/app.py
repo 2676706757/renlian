@@ -4,15 +4,16 @@ import sys
 import json
 
 import torch
-import random
 import subprocess
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)  # remove msg
 from werkzeug.utils import secure_filename
 
 from flask import Flask, render_template, request, send_from_directory, url_for, jsonify
 from flask_cors import CORS, cross_origin
 from flaskwebgui import FlaskUI
 
-from deepfake.inference import AnimationMouthTalk, AnimationFaceTalk, FaceSwap, Retouch, MediaEdit, GetSegment
+from deepfake.inference import AnimationMouthTalk, FaceSwap, Retouch, MediaEdit, GetSegment
 try:
     from diffusers.inference import Video2Video, create_diffusion_instruction
     VIDEO2VIDEO_AVAILABLE = True
@@ -26,7 +27,7 @@ from speech.rtvc_models import load_rtvc, rtvc_models_config
 from backend.folders import (
     MEDIA_FOLDER, TMP_FOLDER, SETTING_FOLDER, CUSTOM_VOICE_FOLDER, CONTENT_FOLDER, CONTENT_MEDIA_EDIT_FOLDER,
     CONTENT_AUDIO_SEPARATOR_FOLDER, CONTENT_DIFFUSER_FOLDER, CONTENT_RETOUCH_FOLDER, CONTENT_FACE_SWAP_FOLDER,
-    CONTENT_ANIMATION_TALK_FOLDER, CONTENT_SPEECH_FOLDER, CONTENT_SPEECH_ENHANCEMENT_FOLDER
+    CONTENT_ANIMATION_TALK_FOLDER, CONTENT_SPEECH_FOLDER, CONTENT_SPEECH_ENHANCEMENT_FOLDER, CONTENT_FACE_MOVE_FOLDER
 )
 from backend.download import get_custom_browser
 from backend.translator import get_translate
@@ -888,9 +889,9 @@ def synthesize_face_swap():
     return {"status": 200}
 
 
-@app.route("/synthesize_animation_talk/", methods=["POST"])
+@app.route("/synthesize_mouth_talk/", methods=["POST"])
 @cross_origin()
-def synthesize_animation_talk():
+def synthesize_mouth_talk():
     # check what it is not repeat button click
     if app.config['SYNTHESIZE_STATUS'].get("status_code") != 200:
         print("The process is already running... ")
@@ -912,13 +913,6 @@ def synthesize_animation_talk():
     face_fields = request_list.get("face_fields")
     source_image = os.path.join(TMP_FOLDER, request_list.get("source_media"))
     driven_audio = os.path.join(TMP_FOLDER, request_list.get("driven_audio"))
-    preprocess = request_list.get("preprocess")
-    still = request_list.get("still")
-    expression_scale = float(request_list.get("expression_scale", 1.0))
-    input_yaw = split_input_deepfake(request_list.get("input_yaw"))
-    input_pitch = split_input_deepfake(request_list.get("input_pitch"))
-    input_roll = split_input_deepfake(request_list.get("input_roll"))
-    type_file = request_list.get("type_file")
     media_start = request_list.get("media_start", 0)
     media_end = request_list.get("media_end", 0)
     emotion_label = request_list.get("emotion_label", None)
@@ -935,37 +929,19 @@ def synthesize_animation_talk():
         app.config['SYNTHESIZE_STATUS'] = {"status_code": 200}
         return {"status": 200}
 
-    if type_file == "img":
-        mode_msg = get_print_translate("Face in sync")
-    else:
-        mode_msg = get_print_translate("Lip in sync")
+    mode_msg = get_print_translate("Lip in sync")
 
     try:
-        if type_file == "img":
-            animation_talk_result = AnimationFaceTalk.main_img_deepfake(
-                deepfake_dir=CONTENT_ANIMATION_TALK_FOLDER,
-                source_image=source_image,
-                driven_audio=driven_audio,
-                still=still,
-                preprocess=preprocess,
-                face_fields=face_fields,
-                expression_scale=expression_scale,
-                input_yaw=input_yaw,
-                input_pitch=input_pitch,
-                input_roll=input_roll,
-                pose_style=random.randint(0, 45)
-                )
-        elif type_file == "video":
-            animation_talk_result = AnimationMouthTalk.main_video_deepfake(
-                deepfake_dir=CONTENT_ANIMATION_TALK_FOLDER,
-                source=source_image,
-                audio=driven_audio,
-                face_fields=face_fields,
-                video_start=float(media_start),
-                video_end=float(media_end),
-                emotion_label=emotion_label,
-                similar_coeff=similar_coeff
-            )
+        animation_talk_result = AnimationMouthTalk.main_video_deepfake(
+            deepfake_dir=CONTENT_ANIMATION_TALK_FOLDER,
+            source=source_image,
+            audio=driven_audio,
+            face_fields=face_fields,
+            video_start=float(media_start),
+            video_end=float(media_end),
+            emotion_label=emotion_label,
+            similar_coeff=similar_coeff
+        )
 
         torch.cuda.empty_cache()
     except Exception as err:

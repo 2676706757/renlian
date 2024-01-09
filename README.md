@@ -75,6 +75,8 @@ Requirements [Python](https://www.python.org/downloads/) version 3.10 and [ffmpe
 For detailed instructions about setup Wunjo AI from GitHub, refer to the [Launch Project from GitHub](https://github.com/wladradchenko/wunjo.wladradchenko.ru/wiki/How-to-install-the-application#launch-project-from-github) section in our wiki.
 
 <!-- DOWNLOAD -->
+You will find on [website](https://wladradchenko.ru/wunjo) official installer or portable versions.
+
 ## Install packets
 
 ### [Ubuntu / Debian v1.6 (GPU version)](https://wladradchenko.ru/static/wunjo.wladradchenko.ru/build/linux/wunjo_1.6.2.deb)
@@ -110,12 +112,10 @@ Read in Wunjo AI documentation how [use GPU](https://github.com/wladradchenko/wu
   <table>
   <tr>
     <th>Original</th>
-    <th>Move face + Enhancer</th>
     <th>Fix face + Enhancer</th>
   </tr>
   <tr align="center">
     <td><img src="example/animation_face/samurai_original.gif" alt="original" width="228" height="360"></td>
-    <td><img src="example/animation_face/samurai_move_enhancer.gif" alt="move_enhancer" width="228" height="360"></td>
     <td><img  src="example/animation_face/samurai_static_enhancer.gif" alt="static_enhancer" width="228" height="360"></td>
   </tr>
 </table>
